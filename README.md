@@ -10,7 +10,7 @@
 
 ## Heart attack by resting blood pressure (in mm Hg)
 
-![Heart attack by resting blood pressure](images/heart_atack_by_resting blood pressure (in mm Hg).PNG)
+![Heart attack by resting blood pressure](images/heart_atack_by_resting_blood_pressure.PNG)
 
 ## Heart attack by age
 
