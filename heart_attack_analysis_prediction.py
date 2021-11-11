@@ -10,6 +10,7 @@ Original file is located at
 !pip install -q kaggle
 
 from google.colab import files
+import numpy as np
 
 files.upload()
 
@@ -31,17 +32,11 @@ data_heart=pd.read_csv("/content/heart.csv")
 
 data_heart.head()
 
-data2=pd.read_csv("/content/o2Saturation.csv")
-
 data_heart.shape
 
 from sklearn.model_selection import train_test_split
 
-
-
 data_heart['sex'].value_counts()
-
-
 
 # Commented out IPython magic to ensure Python compatibility.
 import matplotlib.pyplot as plt
@@ -50,37 +45,83 @@ import matplotlib.pyplot as plt
 plt.subplot(1,2,1)
 
 
-plt.hist(data_heart.loc[data_heart['output']==1,"thalach"])
+plt.hist(data_heart.loc[data_heart['output']==1,"thalachh"])
+plt.xlabel("thalachh")
 plt.title("output==1")
 
 plt.subplot(1,2,2)
 
 
-plt.hist(data_heart.loc[data_heart['output']==0,"thalach"])
+plt.hist(data_heart.loc[data_heart['output']==0,"thalachh"])
 plt.title("output==0")
+plt.xlabel("thalachh")
+
+a=data_heart[["trtbps","output"]].groupby(pd.Grouper(key="trtbps")).sum()
+a.sort_index(inplace=True)
+
+plt.plot(a.index,a['output'])
+plt.xlabel("trtbps")
+plt.ylabel("number of heart attacks")
+plt.title("Heart attack by resting blood pressure (in mm Hg)")
+
+a=data_heart[["age","output"]]
+a.sort_index(inplace=True)
+
+a["a"]=pd.cut(a.age,bins=10)
+
+a = a[['a','output']].groupby('a').sum()
+a.plot(kind='bar')
+
+a=data_heart[["cp","output"]]
+a.sort_index(inplace=True)
+a=a.groupby(pd.Grouper(key="cp")).sum()
+a.plot(kind='bar')
 
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.layers import Dense,Dropout
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from tensorflow.keras.optimizers import SGD
+import tensorflow as tf
 
-data=data_heart.iloc[:,0:12].to_numpy()
-sc =MinMaxScaler()
-data = sc.fit_transform(data)
-data
+X=data_heart.iloc[:,:-1].to_numpy()
+Y=data_heart.iloc[:,13].to_numpy()
 
-y=data_heart.iloc[:,13].to_numpy()
-X_train, X_test, y_train, y_test=train_test_split(data,y,test_size=0.2)
+X_train, X_test, y_train, y_test=train_test_split(X,Y,test_size=0.2)
+
+scaler=StandardScaler()
+X_train=scaler.fit_transform(X_train)
+X_test=scaler.transform(X_test)
 
 model=Sequential([
-                  Dense(20,input_dim=12,activation="relu"),
-
+                  Dense(32,input_dim=13,activation="relu"),
                   Dense(1, activation="sigmoid")
 ])
+model.summary()
 
-model.compile(loss='binary_crossentropy', optimizer=SGD(learning_rate=0.001), metrics=['accuracy'])
+model.compile(loss='binary_crossentropy', optimizer="adam", metrics=['accuracy'])
 
-model.fit(X_train,y_train,epochs=1000)
+callback=tf.keras.callbacks.EarlyStopping(patience=3)
 
-model.evaluate(X_test,y_test)
+hist=model.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),batch_size=16,callbacks=[callback])
+
+y=model.predict(X_test)
+
+y=[1 if i>0.5 else 0 for  i in y]
+
+from sklearn.metrics import confusion_matrix,precision_recall_fscore_support
+import matplotlib.pyplot as plt
+
+conf_matrix=confusion_matrix(y_test,y)
+fig, ax = plt.subplots(figsize=(7.5, 7.5))
+ax.matshow(conf_matrix, cmap=plt.cm.Blues, alpha=0.3)
+for i in range(conf_matrix.shape[0]):
+    for j in range(conf_matrix.shape[1]):
+        ax.text(x=j, y=i,s=conf_matrix[i, j], va='center', ha='center', size='xx-large')
+ 
+plt.xlabel('Predictions', fontsize=18)
+plt.ylabel('Actuals', fontsize=18)
+plt.title('Confusion Matrix', fontsize=18)
+plt.show()
+
+print("f1-score: ",precision_recall_fscore_support(y_test,y,average="micro")[2])
