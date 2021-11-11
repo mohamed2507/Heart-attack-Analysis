@@ -24,6 +24,9 @@
 
 ![Training the model](images/model.PNG)
 
+## Confusion matrix
+
+![Confusion matrix](images/confusion_matrix.PNG)
 
 ## Evaluation
 
