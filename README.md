@@ -26,7 +26,7 @@
 
 ## Confusion matrix
 
-![Confusion matrix](images/confusion_matrix.PNG)
+![Confusion matrix](images/confusion_matrix.png)
 
 ## Evaluation
 
